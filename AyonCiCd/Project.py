@@ -1,11 +1,13 @@
 import os
 from io import StringIO 
 import sys
-from pprint import pprint
+from pprint import pp, pprint
 import shutil
 import subprocess
 import inspect
 from . import pipfuncs
+import json
+from datetime import datetime
 
 class Capturing(list):
     def __enter__(self):
@@ -30,6 +32,39 @@ class Project():
         self.Prj_Run_Errors = {}
         self.Prj_Exec_error = 0
         self.pipPackages = []
+        self.Variables = {}
+        self.jsonStorePos = os.path.abspath(os.path.join(self.baseOutputFoulderPath, f"{self.ProjectName}_Variables.json"))
+        
+        if (self.check_venv(self.ProjectName+"_BuildVenv") != True and not sys.argv[1] == "setup" ):
+            callerArgs = " ".join(sys.argv[1:])
+            self.activate_venv(self.venvPath, f"{self.rootExecuterScript} {callerArgs}")
+            self.stop_execution()
+        self.loadJson()
+        
+    def log(self, TopInfo, *args):
+        spacing = int((80 - len(TopInfo))/2)
+        print("-"*spacing, TopInfo, "-"*spacing)
+        pprint(args)
+        print("-"*80, "\n")
+
+    def loadJson(self):
+        if not os.path.exists(self.jsonStorePos):
+            os.makedirs(os.path.dirname(self.jsonStorePos), exist_ok=True)
+            with open(self.jsonStorePos, "w") as json_file:
+                json.dump({"CreationTime":datetime.utcnow().isoformat()}, json_file)
+        with open(self.jsonStorePos, "r") as jsonVarFile:
+            self.Variables = json.load(jsonVarFile)
+        self.log("Loading Json Variable's File for ths Project", self.Variables)
+
+    def setVar(self, VarName, VarValue):
+        self.Variables[VarName] = VarValue
+        self.log("setVar()",f"varName={VarName} VarValue={self.Variables[VarName]}")
+
+    def displayVar(self, VarName):
+        self.log("displayVar()",f"varName={VarName} VarValue={self.Variables[VarName]}")
+
+    def getVar(self, VarName):
+        return self.Variables[VarName]
 
     def create_venv(self, venv_name):
         print(f"Creating Venv: {venv_name}")
@@ -49,7 +84,7 @@ class Project():
         print(stderr.decode())
         if len(stderr.decode()) >= 1:
             self.Prj_Exec_error = 1
-            print("Script Errored")
+            self.log("activate_venv()", "Script Errored")
         process.wait()
 
     def addPipPackage(self, packageName:str) -> None:
@@ -61,20 +96,30 @@ class Project():
 
     def stop_execution(self):
         sys.exit()
-
+    
     def __del__(self):
-        print("finished execution with code:", self.Prj_Exec_error)
+        # self.log("__del__()", f"finished execution with code:{self.Prj_Exec_error}")
         if not self.Prj_Exec_error == 0:
             sys.exit(1)
+        
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # self.log("__exit__()", f"Project ExitLog: {exc_type}, {exc_value}, {traceback}")
+        if not exc_value == 0 and not exc_value == None:
+            self.Prj_Run_Errors = 1
+        with open(self.jsonStorePos, "w") as json_file:
+                json.dump(self.Variables, json_file)
 
     def check_venv(self, venv_name) -> bool:
         if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
             # Inside a virtual environment
             if os.path.basename(sys.prefix) != venv_name:
-                print(f"Error: This script should be run within a virtual environment named '{venv_name}'.")
+                self.log("check_venv()", f"Error: This script should be run within a virtual environment named '{venv_name}'.")
                 return False
         else:
-            print("This script should be run within a virtual environment. Creationg an Venv and switching to it")
+            self.log("check_venv()", "This script should be run within a virtual environment. Creationg an Venv and switching to it")
             return False
         return True
 
@@ -103,6 +148,7 @@ class Project():
 
     def execSingleStage(self, stage_Identifier) ->None:
         index = None
+        self.log("execSingleStage()", stage_Identifier)
         try: 
             index = self.Stages[self.Stages.index(stage_Identifier)]
         except ValueError:
@@ -121,7 +167,8 @@ class Project():
             os.mkdir(self.buildArtefactsPath)
 
             self.create_venv(self.venvPath)
-            self.activate_venv(self.venvPath, self.rootExecuterScript)
+            callerArgs = " ".join(sys.argv[1:])
+            self.activate_venv(self.venvPath, f"{self.rootExecuterScript} {callerArgs}")
             self.stop_execution()
         print("running")
         self.installAllPipPackage()
@@ -130,12 +177,12 @@ class Project():
         if len(sys.argv) > 1:
             function_name = sys.argv[1]
             if hasattr(self, function_name) and callable(getattr(self, function_name)):
-                # Get the parameters from command line
                 params = sys.argv[2:]
-                # Call the function with parameters
                 getattr(self, function_name)(*params)
             else:
                 print("Function not found or not callable!")
+
+
 
 
 class Stage: 
