@@ -1,5 +1,6 @@
 import os
 from io import StringIO 
+from os.path import basename, join
 import sys
 from pprint import pp, pprint
 import shutil
@@ -33,6 +34,7 @@ class Project():
         self.Prj_Exec_error = 0
         self.pipPackages = []
         self.Variables = {}
+        self.StageGrps = {}
         self.jsonStorePos = os.path.abspath(os.path.join(self.baseOutputFoulderPath, f"{self.ProjectName}_Variables.json"))
         
         if (self.check_venv(self.ProjectName+"_BuildVenv") != True and not sys.argv[1] == "setup" ):
@@ -46,6 +48,15 @@ class Project():
         print("-"*spacing, TopInfo, "-"*spacing)
         pprint(args)
         print("-"*80, "\n")
+
+    def CreateStageGRP(self, GrpName, *stageInstances) -> None:
+        StageGrp = list(stageInstances)
+        self.StageGrps[GrpName] = StageGrp
+
+    def runStageGRP(self, stageGRPName:str) -> None:
+        stageGrp = self.StageGrps[stageGRPName]
+        for stage in stageGrp:
+            self.execStage(stage)
 
     def loadJson(self):
         if not os.path.exists(self.jsonStorePos):
@@ -81,10 +92,10 @@ class Project():
         process = subprocess.Popen(activate_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = process.communicate()
         print(stdout.decode())
-        print(stderr.decode())
         if len(stderr.decode()) >= 1:
             self.Prj_Exec_error = 1
-            self.log("activate_venv()", "Script Errored")
+            self.Prj_Run_Errors = "activate_venv"
+            self.log(f"activate_venv() Decoded Errors// {stderr.decode()} // ", "Scrips Errors (Currently activate_venv dose not cast Prj_Run_Errors)")
         process.wait()
 
     def addPipPackage(self, packageName:str) -> None:
@@ -98,7 +109,7 @@ class Project():
         sys.exit()
     
     def __del__(self):
-        # self.log("__del__()", f"finished execution with code:{self.Prj_Exec_error}")
+        self.log("__del__()", f"Finished Execution with code:{self.Prj_Exec_error}, {self.Prj_Run_Errors}")
         if not self.Prj_Exec_error == 0:
             sys.exit(1)
         
@@ -108,7 +119,8 @@ class Project():
     def __exit__(self, exc_type, exc_value, traceback):
         # self.log("__exit__()", f"Project ExitLog: {exc_type}, {exc_value}, {traceback}")
         if not exc_value == 0 and not exc_value == None:
-            self.Prj_Run_Errors = 1
+            self.Prj_Exec_error = 1
+            self.Prj_Run_Errors = "__exit__"
         with open(self.jsonStorePos, "w") as json_file:
                 json.dump(self.Variables, json_file)
 
@@ -116,10 +128,10 @@ class Project():
         if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
             # Inside a virtual environment
             if os.path.basename(sys.prefix) != venv_name:
-                self.log("check_venv()", f"Error: This script should be run within a virtual environment named '{venv_name}'.")
+                self.log("check_venv()", f"Error: This Script Should be run Within a virtual Environment Named '{venv_name}'.")
                 return False
         else:
-            self.log("check_venv()", "This script should be run within a virtual environment. Creationg an Venv and switching to it")
+            self.log("check_venv()", "This script Should be run Within a Virtual Environment. Creationg an Venv and Switching to it")
             return False
         return True
 
@@ -190,7 +202,7 @@ class Stage:
         self.funcs = []
         self.artifacts = []
         self.StageName = StageName
-        self.parentOutputFoulder = None
+        self.parentOutputFoulder = "" 
 
     def addFunc(self, funcInstance) -> None:
         self.funcs.append(funcInstance)
@@ -209,9 +221,22 @@ class Stage:
                 func()
             # exec stage artefacts 
             for artefactPath in self.artifacts:
-                try:
-                    shutil.copytree(os.path.abspath(artefactPath), os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefact")))
-                except Exception:
-                    print("No artefacts to Copy")
+                artefactBaseFoulder = os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefact"))
+
+                if not os.path.exists(artefactBaseFoulder):
+                    os.makedirs(artefactBaseFoulder)
+                artefactDestinationPath = os.path.join(artefactBaseFoulder, os.path.basename(artefactPath))
+
+                if os.path.isfile(artefactPath):
+                    try:
+                        shutil.copy(os.path.abspath(artefactPath), os.path.abspath(artefactDestinationPath))
+                    except shutil.Error:
+                        print("No artefacts to Copy")
+                else:
+                    try:
+                        shutil.copytree(os.path.abspath(artefactPath), os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefact")))
+                    except shutil.Error:
+                        print("No artefacts to Copy")
+
 
         return output
