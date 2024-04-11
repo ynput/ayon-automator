@@ -1,8 +1,7 @@
 import os
 from io import StringIO 
-from os.path import basename, join
 import sys
-from pprint import pp, pprint
+from pprint import pprint
 import shutil
 import subprocess
 import inspect
@@ -109,29 +108,30 @@ class Project():
         sys.exit()
     
     def __del__(self):
-        self.log("__del__()", f"Finished Execution with code:{self.Prj_Exec_error}, {self.Prj_Run_Errors}")
         if not self.Prj_Exec_error == 0:
+
+            self.log("__del__()", f"Finished Execution with code:{self.Prj_Exec_error}, {self.Prj_Run_Errors}")
             sys.exit(1)
         
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # self.log("__exit__()", f"Project ExitLog: {exc_type}, {exc_value}, {traceback}")
         if not exc_value == 0 and not exc_value == None:
-            self.Prj_Exec_error = 1
-            self.Prj_Run_Errors = "__exit__"
+
+            self.log("__exit__()", f"Project ExitLog: type: {exc_type}, val: {exc_value}, traceback: {traceback}")
+            # self.Prj_Exec_error = 1
+            # self.Prj_Run_Errors = "__exit__"
         with open(self.jsonStorePos, "w") as json_file:
                 json.dump(self.Variables, json_file)
 
     def check_venv(self, venv_name) -> bool:
         if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
-            # Inside a virtual environment
             if os.path.basename(sys.prefix) != venv_name:
                 self.log("check_venv()", f"Error: This Script Should be run Within a virtual Environment Named '{venv_name}'.")
                 return False
         else:
-            self.log("check_venv()", "This script Should be run Within a Virtual Environment. Creationg an Venv and Switching to it")
+            # self.log("check_venv()", "This script Should be run Within a Virtual Environment. Creationg an Venv and Switching to it")
             return False
         return True
 
@@ -216,12 +216,10 @@ class Stage:
 
     def execStage(self):
         with Capturing() as output:
-            # exec stage funcs
             for func in self.funcs:
                 func()
-            # exec stage artefacts 
             for artefactPath in self.artifacts:
-                artefactBaseFoulder = os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefact"))
+                artefactBaseFoulder = os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefacts"))
 
                 if not os.path.exists(artefactBaseFoulder):
                     os.makedirs(artefactBaseFoulder)
@@ -229,12 +227,16 @@ class Stage:
 
                 if os.path.isfile(artefactPath):
                     try:
+                        os.makedirs(os.path.dirname(artefactDestinationPath), exist_ok=True)
                         shutil.copy(os.path.abspath(artefactPath), os.path.abspath(artefactDestinationPath))
                     except shutil.Error:
                         print("No artefacts to Copy")
                 else:
                     try:
-                        shutil.copytree(os.path.abspath(artefactPath), os.path.join(self.parentOutputFoulder, (self.StageName + "_Artefact")))
+                        if os.path.exists(artefactDestinationPath):
+                            print("dir")
+                            shutil.rmtree(artefactDestinationPath)
+                        shutil.copytree(os.path.abspath(artefactPath), artefactDestinationPath)
                     except shutil.Error:
                         print("No artefacts to Copy")
 
