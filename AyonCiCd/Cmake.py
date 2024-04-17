@@ -3,6 +3,12 @@ import subprocess
 from . import Project
 
 def Command(ParentPrj: Project.Project = None, *args):
+    """ function for running cmake commands 
+
+    Args
+        ParentPrj: parent project instance to register errors against 
+        *args: arguments to be costed to cmake CLI
+    """
     result = subprocess.run(["cmake", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     output = result.stdout
     errors = result.stderr

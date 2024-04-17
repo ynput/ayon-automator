@@ -1,11 +1,16 @@
-import sys
 import subprocess
-import platform
 import os
 from . import Project
 from pprint import pprint
 
 def open_software(software_path, ParentPrj: Project.Project = None, *args):
+    """ function for running software in a sub process (deprecated its advised to use cmd.py run() Instead)
+
+    Args:
+        software_path (): 
+        ParentPrj: 
+        *args: 
+    """
     os.path.abspath(software_path)
     command = [software_path] + list(args)
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

@@ -1,60 +1,77 @@
 # AyonCiCd-Automator
 
-Automator is a toolkit built to allow the definition and usage of testing Setups
-/ Stages\
-The target off this toolkit is to allow a developer to setup his/her build and
-test setup all in python while not losing the ability to run it where ever they
-want.
+Automator is a toolkit for setting up build and test Stages to ease your
+Development Workflow
 
 ## Base Concepts
 
-An Automator project consists off the following portions.
+An Automator Project has 2 Parts to it. The Setup and the Project itself
 
-1. The Project definition
+### Setup
+
+Setup in Automator in made from 2 parts
+
+1. in your project you can define packages that you want installed and a folder
+   structure named like your project will be created where everything is stored
+2. setup cmd command. Running the setup command will ultimately create the
+   output folder structure and the venv used to provide site packages to your
+   main python runner.
+
+### Project
+
+A project in Automator is just a named collection off stages and stage Groups
+that you can make available to the Cli.
+
+Projects Are build from the following portions.
+
+1. Project definition
+   - Describes project Name and required pip packages
+   - Also holds all Variables, Stages and StageGrps
 2. Stage Definitions
+   - A list off functions and Artifact's that will be executed when stage
+     execute is called
 3. Stage Exec Groups (optional)
-4. Cli Availability
-
-| Variable           | Description                                                                                                                                                                                                                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Project`          | a Project in Automator is nothing more than an organisational setup that allows you to group all your stages. it will also capture output from your stages and order said output in an easy to follow way                                                                                            |
-| `Stage`            | stagesare groups off artefacts and functions that will be run together in the order off definition. this allows you to execute only the steps you want when you want them                                                                                                                            |
-| `StageExecGRP`     | stage Exec Groups allow an Dev to define Stages that he might want to run together, they are fully optional and they are great if you have testing setups that might need to start multiple things or have specific build requirement's                                                              |
-| `Cli Availability` | Automator delivers a function that makes your project availalbe to the CLI so that you can start stages or StageExecGRPGRPs via `python AutomatorScript.py runStageGrp StageGrpName` this makes it easy to work with your newly build workflows and allows easy acess from e.g Github or Gitlab CiCd |
+   - an optional system that allows you to group stages to run them together,
+     this might be useful for tests where you might need a test build and a test
+     stage.
 
 ### Cli Availability
 
 This portion will describe what the Cli Availability exposes to you and why and
 when you might want to use it.
 
-- makeClassCliAvailable is a function run in a with block. the reason for that
-  is that the function automatically captures all Cli output and writes it down
-  insid off files in your build artifact's. this allows you to later view them
-  and get a deeper look why things might have failed without having to rerun the
-  full test setup
+- makeClassCliAvailable is a function run in a with block that allows you to
+  start stages and StageGrps from the cli.
+- its run within a with statement so that we can use the **exit** function to
+  write out everything that happened to the appropriate artifact file. thees
+  will later help when debugging because you will have everything that happened
+  available to you in your artifacts.
 
 ```py
 with ProjectName as PRJ:
     PRJ.makeClassCliAvailable()
 ```
 
+Example Usage `python AutomatorScript.py runStageGrp StageGrpName`
+
 - The makeClassCliAvailable function exposes the following functions
 
-| Variable          | Description                                                                                                                                                                                                                                                               |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setup`           | Setup will setup the Venv and the output foulders for your later stages (this will also be run by execAllStages)                                                                                                                                                          |
-| `execSingleStage` | execSingleStage allows you to only run a single stage. this might be of interest if your rerunning tests and you only change the input data and not your code.                                                                                                            |
-| `execAllStages`   | execAllStages will run setup and run all stages                                                                                                                                                                                                                           |
-| `setVar`          | setVar allows you to set Variables from within your script or from the cli this might be usefull if you want to pass in variables depending on platform, the variables will be stored in a .json file and survive Rerunning the sciprt so no need to sett them evey time. |
-| `runStageGRP`     | runStageGRP allows you to run a single stage Grp this might be usefull if you need to complie your code before testing.                                                                                                                                                   |
+| Variable          | Description                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `setup`           | Setup will setup the Venv and the output foulder it will also install all the pip packages inside off the venv. you will have to run this once before running annything else. the setup is precistent between runs |
+| `execSingleStage` | execSingleStage allows you to only run a single stage. this might be of interest if your rerunning tests and you only change the input data and not your code.                                                     |
+| `execAllStages`   | execAllStages will run all stages in the order they where added to the project.                                                                                                                                    |
+| `setVar`          | setVar allows you to set Variables from within your script or from the cli. they will also be stored in the Variables.json file and thereby be presisent                                                           |
+| `runStageGRP`     | runStageGRP allows you to run a single stage Grp this might be usefull if you need to complie your code without testing it.                                                                                        |
 
 - Theoretically the makeClassCliAvailable will expose all class functions but
-  its not advised to use it this way. but if you want to do so on your own Risk
+  its not advised to use it this way. But if you want to do so. Do it on your
+  own Risk
 
 # How to
 
-1. Clone the repo into a convinient place in your project. (make sure that the
-   foulder your copying to has no `-` in it as python dose not like them when
+1. Clone the Repo into a convenient place in your project. (make sure that the
+   folder your copying to has no `-` in it as python dose not like them when
    using `import`)
 
 ### Define a Project
@@ -74,6 +91,12 @@ BuildStage.addArtefactFoulder("/path/to/artefacts/foulder") # adding artifacts a
 Project.addStage(Stage)
 ```
 
+### Define a stageGRP (Optional)
+
+```py
+Project.CreateStageGRP("StageGrpName", StageInstanceA, StageInstanceB)
+```
+
 ### Make your project available to the Cli
 
 ```py
@@ -89,20 +112,15 @@ packages you added Via addPipPackage.
 `python AyonBuild.py setup`
 
 The `execSingleStage` or `runStageGRP` commands allow you to run a single stage
-or a single StageGrp respectively. booth off them will jump into the Project
-venv and Thereby have all the Packages Available to them. their output will be
-printed to the Cli from withing python so it might arrive delayed. the also
-capture the Cli output and thereby allow you revisiting what happened later.
-(the files are not named with a time stamp and reruns overwrite old files)
+or a StageGrp respectively. both off these functions will append the venv
+site-packages to your current site packages and thereby make them available to
+your current python instance
 
 `python AyonBuild.py execSingleStage StageName`
 `python AyonBuild.py runStageGRP StageGRPName`
 
-The `execAllStages` allows you to run all stages defined in your project. it
-will also run setup. this might be great if you only defined stages that you
-want to run together, in this case you could skip creating a StageGrp and run
-use this function instead.
+The `execAllStages` allows you to run all stages defined in your project. this
+might be great if you only defined stages that you want to run together, in this
+case you could skip creating a StageGrp and run use this function instead.
 
 `python AyonBuild.py execAllStages`
-
-``

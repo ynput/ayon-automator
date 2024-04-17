@@ -5,6 +5,12 @@ import os
 
 
 def DoxygenRun(doxyFile, ParentPrj: Project.Project = None):
+    """ function to run doxygen in shell. 
+
+    Args:
+        doxyFile: path to doxy file  
+        ParentPrj: parent project instance to register errors against 
+    """
     DoxyFileName = os.path.basename(doxyFile)
     filePath = os.path.dirname(doxyFile)
     print(DoxyFileName, filePath)
