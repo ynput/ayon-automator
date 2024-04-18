@@ -8,16 +8,22 @@ import inspect
 import json
 from datetime import datetime
 import site
+from pathlib import Path
+
 
 class Capturing:
-    """a class build to capture stdout and stderr output. 
-    target off this class is make the output available as a variable for further use 
+    """Capture stdout and stderr output. 
+
+    Capture the output as a variable for further use.
 
     Attributes: 
         stdout: fake stdout to capture + store output  
         stderr: fake stderr to capture + store output
-        original_stdout: variable to store the original stdout to reusing it at __exit__
-        original_stderr: variable to store the original stderr to reusing it at __exit__
+        original_stdout: variable to store the original stdout to reusing
+            it at ``__exit__``
+        original_stderr: variable to store the original stderr to reusing
+            it at ``__exit__``
+
     """
     def __enter__(self):
         self.stdout = ""
@@ -28,16 +34,17 @@ class Capturing:
         sys.stderr = self
         return self
 
-    def get_output(self)->str:
-        """ function to retrieve the data captured by this class. 
-        this will combine stdout and stderr into one string separated by an escape char. 
+    def get_output(self) -> str:
+        """Retrieve the data captured by this class. 
+        
+        This will combine stdout and stderr into one string separated by an escape char. 
 
         Returns:
+            str: stdout + stderr separated by new line.
             
         """
         return self.stdout + "\n" + self.stderr 
         
-
     def __exit__(self, exc_type, exc_value, traceback):
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr 
@@ -45,35 +52,41 @@ class Capturing:
         sys.stdout.write(self.stderr)
         return
 
-    def write(self, text):
-        """ function for imitating stdout and capturing the data from it
+    def write(self, text: str):
+        """Imitating stdout and capturing the data from it.
 
         Args:
-            text: input text to we written to stdout 
+            text (str): input text to be written to stdout
+            
         """
         self.stdout += text
 
+    @staticmethod
     def isatty(self):
-        """ function for imitating color support info's. 
-        currently this function just returns False and dose not actually test
+        """Imitating color support info's. 
+
+        Currently, this function just returns False and does not actually test.
 
         Returns:
+            bool: False
             
         """
         return False
 
 
 class Project():
-
-    """ class to describe a project for execution usage
+    """Class to describe a project for execution usage.
 
     Attributes: 
-        ProjectName: Name attribute used to identify and to make cli availability easier 
-        baseOutputFoulderPath: auto generated path that describing the base folder for Venv and Artifacts   
-        rootExecuterScript:  auto generated variable holding the root off the execution graph (Discontinued)
-        VariablesJsonFilePath: path describing the location for the json file used to keep track off variables cross execution
-        Variables: a ditc off variables set and made available to every function
-        buildArtefactsPath: the base path where the build artifacts will be stored 
+        project_name: Name used to identify and to make CLI
+            availability easier. 
+        base_output_folder_path: auto generated path that describing the base
+            folder for venv and artifacts.
+        root_exe_script:  auto generated variable holding the root of the
+            execution graph (deprecated)
+        var_json_file_path: path describing the location for the json file used to keep track off variables cross execution
+        variables: a ditc off variables set and made available to every function
+        build_artefacts_path: the base path where the build artifacts will be stored
         RegisteredStageList: a list off all stages available to the project. (mainly used by executAllStages)
         StageGrps: list off stage groups (used for runStageGRP)
         python_version: variable holding a string representation off the major.minor number describing the python version. (useful for folder actions inside off the venv)
@@ -83,38 +96,48 @@ class Project():
         Prj_Exec_error: int used for sys.exit() in order to flag a run as failed. 
     """
 # Construction / Destruction 
-    def __init__(self, projectName:str) -> None:
+    def __init__(self, project_name:str) -> None:
+        """Setup variables and env.
 
-        """ init will setup variables and call add_venv_path_to_path() and loadJson() the function will also call setup if the venv path dose not exist
+        Call meth:`add_venv_path_to_path()` and meth:`loadJson()`,
+        the function will also call setup if the venv path does not exist.
 
         Args:
-            projectName:str used to define a name for the project. (will most often be the same as the name off the tool set or project your currently testing) 
+            project_name:str used to define a name for the project. (will most often be the same as the name off the tool set or project your currently testing)
         """
        
-        # Project 
-        self.ProjectName = projectName
-        self.baseOutputFoulderPath = os.path.abspath(projectName+"_CiCd")
-        self.rootExecuterScript = inspect.stack()[1].filename
+        # project
+        self.project_name = project_name
+
+        self.base_output_folder_path = os.path.abspath(project_name + "_cicd")
+        self.root_exe_script = inspect.stack()[1].filename
         
-        #Project vars
-        self.VariablesJsonFilePath = os.path.abspath(os.path.join(self.baseOutputFoulderPath, f"{self.ProjectName}_Variables.json"))
-        self.Variables = {}
+        # project vars
+        self.var_json_file_path = os.path.abspath(
+            os.path.join(
+                self.base_output_folder_path,
+                f"{self.project_name}_variables.json"
+            )
+        )
+        self.variables = {}
 
-        #artefacts
-        self.buildArtefactsPath = os.path.abspath(os.path.join(self.baseOutputFoulderPath, "buildArtefacts"))
+        # artefacts
+        self.build_artefacts_path = os.path.abspath(
+            os.path.join(
+                self.base_output_folder_path, "artefacts"))
 
-        #Stages 
+        # stages
         self.RegisteredStageList = []
 
-        #StageGrps
+        # stage groups
         self.StageGrps = {}
 
-        #Python infos 
+        # python infos
 
         self.python_version = str(sys.version_info.major) + "." + str(sys.version_info.minor)
         
         #Venv infos
-        self.venvPath = os.path.abspath(os.path.join(self.baseOutputFoulderPath, (projectName+"_BuildVenv")))
+        self.venvPath = os.path.abspath(os.path.join(self.base_output_folder_path, (project_name + "_BuildVenv")))
         self.pipPackages = []
 
         #Exec Data
@@ -123,7 +146,7 @@ class Project():
 
         if not os.path.exists(self.venvPath):
             self.setup()
-            #TODO what doo i doo when setup has been run // it sould be run seperatly but this allows running it with exec stage (this will error tho)
+            # TODO what doo i doo when setup has been run // it sould be run seperatly but this allows running it with exec stage (this will error tho)
 
         self.add_venv_path_to_path()
         self.loadJson()
@@ -160,21 +183,21 @@ class Project():
             exc_value (): 
             traceback (): 
         """
-        if not exc_value == 0 and not exc_value == None:
+        if not exc_value == 0 and not exc_value is None:
 
             self.log("__exit__()", f"Project ExitLog: type: {exc_type}, val: {exc_value}, traceback: {traceback}")
-        with open(self.VariablesJsonFilePath, "w") as json_file:
-                json.dump(self.Variables, json_file)
+        with open(self.var_json_file_path, "w") as json_file:
+                json.dump(self.variables, json_file)
 
 # Startup Helpers
     def setup(self):
         """ setup function used to generate the venv and to install all needed packages 
         this should be called in a separate process before running any tests """
-        if os.path.exists(self.baseOutputFoulderPath): 
-            shutil.rmtree(self.baseOutputFoulderPath)
+        if os.path.exists(self.base_output_folder_path):
+            shutil.rmtree(self.base_output_folder_path)
             print("Deleted Root foulder")
-        os.mkdir(self.baseOutputFoulderPath)
-        os.mkdir(self.buildArtefactsPath)
+        os.mkdir(self.base_output_folder_path)
+        os.mkdir(self.build_artefacts_path)
 
         self.create_venv(self.venvPath)
         self.install_pip_packes_in_venv(self.venvPath, self.pipPackages)
@@ -232,13 +255,13 @@ class Project():
 # Variable Funcs
     def loadJson(self):
         """function used to load the variable.json into the project local variable store. This allows for variables to be set by one execution run and consumed by another. """
-        if not os.path.exists(self.VariablesJsonFilePath):
-            os.makedirs(os.path.dirname(self.VariablesJsonFilePath), exist_ok=True)
-            with open(self.VariablesJsonFilePath, "w") as json_file:
+        if not os.path.exists(self.var_json_file_path):
+            os.makedirs(os.path.dirname(self.var_json_file_path), exist_ok=True)
+            with open(self.var_json_file_path, "w") as json_file:
                 json.dump({"CreationTime":datetime.utcnow().isoformat()}, json_file)
-        with open(self.VariablesJsonFilePath, "r") as jsonVarFile:
-            self.Variables = json.load(jsonVarFile)
-        self.log("Loading Json Variable's File for ths Project", self.Variables)
+        with open(self.var_json_file_path, "r") as jsonVarFile:
+            self.variables = json.load(jsonVarFile)
+        self.log("Loading Json Variable's File for ths Project", self.variables)
 
     def setVar(self, VarName, VarValue):
         """function for setting a variable in the project local variables store. all functions set with this function will be stored in the variables.json. 
@@ -248,8 +271,8 @@ class Project():
             VarName: 
             VarValue: 
         """
-        self.Variables[VarName] = VarValue
-        self.log("setVar()",f"varName={VarName} VarValue={self.Variables[VarName]}")
+        self.variables[VarName] = VarValue
+        self.log("setVar()",f"varName={VarName} VarValue={self.variables[VarName]}")
 
     def displayVar(self, VarName:str):
         """ function to display what value a variable has at the current time. 
@@ -257,7 +280,7 @@ class Project():
         Args:
             VarName:str 
         """
-        self.log("displayVar()",f"varName={VarName} VarValue={self.Variables[VarName]}")
+        self.log("displayVar()",f"varName={VarName} VarValue={self.variables[VarName]}")
 
     def getVar(self, VarName:str):
         """function to retrieve the value of a variable 
@@ -268,8 +291,8 @@ class Project():
         Returns: value off a given varialbe or None if the key is not found via .get()
             
         """
-        if self.Variables.get(VarName) != None:
-            return self.Variables[VarName]
+        if self.variables.get(VarName) is not None:
+            return self.variables[VarName]
         return None
 
 
@@ -282,7 +305,7 @@ class Project():
             stageInstance: 
         """
         self.RegisteredStageList.append(stageInstance)
-        stageInstance.parentOutputFoulder = self.buildArtefactsPath
+        stageInstance.parentOutputFoulder = self.build_artefacts_path
 
     def execStage(self, Stage) -> None:
         """ function for executing a stage and formatting the output. 
@@ -291,7 +314,7 @@ class Project():
             Stage: stageInstance 
         """
         fileName = f"{Stage.StageName}.txt"
-        filePos = os.path.join(self.buildArtefactsPath, fileName)
+        filePos = os.path.join(self.build_artefacts_path, fileName)
         print()
         print("-"*80)
         print("Running Stage: ", Stage.StageName)

@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ayoncicd-automator"
+version = "0.1.0"
+description = ""
+authors = ["Ynput Team <team@ynput.io>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.dev-dependencies]
+ruff = "^0.1.0"
+codespell = "^2.0.0"
+pydocstyle = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
