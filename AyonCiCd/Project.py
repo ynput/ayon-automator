@@ -184,7 +184,14 @@ class Project():
     def add_venv_path_to_path(self):
         """function for adding the side packages installed under the venv to the current python accessible path. 
         this allows access to the packages without having to activate the venv"""
-        venv_python = os.path.join(self.venvPath, "bin", "python")
+        venv_python = None
+        if sys.platform.startswith('win'):
+            venv_python = os.path.join(self.venvPath, "Scripts", "python.exe")
+        elif sys.platform.startswith('linux'):
+            venv_python = os.path.join(self.venvPath, "bin", "python")
+        else:
+            raise RuntimeError("Your platform is not suported")
+
         command = "import sysconfig; print(sysconfig.get_path('purelib'))"
         output = subprocess.check_output([venv_python, "-c", command])
         venv_site_packages = os.path.abspath(output.decode("utf-8").strip())
@@ -374,8 +381,11 @@ class Project():
             venv_path: 
             pip_package_list: 
         """
-        pip_install_list = " ".join(pip_package_list)
-        cmd_command = f"{self.get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && pip install {pip_install_list}"
+        pip_install_command = ""
+        if len(pip_package_list):
+            pip_install_list = " ".join(pip_package_list)
+            pip_install_command = f"&& pip install {pip_install_list}"
+        cmd_command = f"{self.get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip {pip_install_command}"
         print(cmd_command)
         process = subprocess.Popen(cmd_command, shell=True)
         process.wait()
