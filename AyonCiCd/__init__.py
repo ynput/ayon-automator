@@ -1,5 +1,4 @@
-from project import Project
-
+from . import Project
 
 __all__ = [
     "Project"
