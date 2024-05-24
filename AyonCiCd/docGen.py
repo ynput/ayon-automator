@@ -1,7 +1,7 @@
 import subprocess
 import os
 from pprint import pprint
-from Project import Project
+from .Project import Project
 
 def doxygen_run(doxyFile, ParentPrj: Project):
     """ function to run doxygen in shell. 

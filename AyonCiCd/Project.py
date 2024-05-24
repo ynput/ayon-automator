@@ -1,3 +1,4 @@
+import io
 import os
 import venv
 import sys
@@ -6,72 +7,9 @@ import subprocess
 import inspect
 import json
 import site
+from contextlib import redirect_stdout, redirect_stderr
 from pprint import pprint
 from datetime import datetime
-
-
-class Capturing:
-    """Capture stdout and stderr output. 
-
-    Capture the output as a variable for further use.
-
-    Attributes: 
-        stdout: fake stdout to capture + store output  
-        stderr: fake stderr to capture + store output
-        original_stdout: variable to store the original stdout to reusing
-            it at ``__exit__``
-        original_stderr: variable to store the original stderr to reusing
-            it at ``__exit__``
-
-    """
-    def __enter__(self):
-        self.stdout = ""
-        self.stderr = ""
-        self.original_stdout = sys.stdout
-        self.original_stderr = sys.stderr
-        sys.stdout = self
-        sys.stderr = self
-        return self
-
-    def get_output(self) -> str:
-        """Retrieve the data captured by this class. 
-        
-        This will combine stdout and stderr into one string separated by an escape char. 
-
-        Returns:
-            str: stdout + stderr separated by new line.
-            
-        """
-        return self.stdout + "\n" + self.stderr 
-        
-    def __exit__(self, exc_type, exc_value, traceback):
-        sys.stdout = self.original_stdout
-        sys.stderr = self.original_stderr 
-        sys.stdout.write(self.stdout)
-        sys.stdout.write(self.stderr)
-        return
-
-    def write(self, text: str):
-        """Imitating stdout and capturing the data from it.
-
-        Args:
-            text (str): input text to be written to stdout
-            
-        """
-        self.stdout += text
-
-    @staticmethod
-    def isatty(self):
-        """Imitating color support info's. 
-
-        Currently, this function just returns False and does not actually test.
-
-        Returns:
-            bool: False
-            
-        """
-        return False
-
 
 class Project():
     """Class to describe a project for execution usage.
@@ -218,8 +156,6 @@ class Project():
         venv_site_packages = os.path.abspath(output.decode("utf-8").strip())
         site.addsitedir(venv_site_packages)
 
-         
-
     def make_project_cli_available(self):
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
         this allows usage from cli and access to all functions in this class"""
@@ -351,7 +287,7 @@ class Project():
         if not index:
             print("Stage Not Found")
             return
-
+        
         self._call_stage_execution(index)
 
     def runStageGRP(self, stageGRPName:str) -> None:
@@ -507,10 +443,18 @@ class Stage:
         Returns: stdout and stderr captured while running stage 
             
         """
-        with Capturing() as output:
-            for func in self.stage_function_list:
-                func()
-            for artefactPath in self.stage_artefact_list:
-                self.copy_artefact(artefactPath)
 
-        return output.get_output()
+
+        std_out_capture = io.StringIO()
+        std_err_capture = io.StringIO()
+        with redirect_stderr(std_err_capture):
+            with redirect_stdout(std_out_capture):
+                for func in self.stage_function_list:
+                    func()
+                for artefactPath in self.stage_artefact_list:
+                    self.copy_artefact(artefactPath)
+        sys.stdout.write(std_out_capture.getvalue())
+        sys.stderr.write(std_err_capture.getvalue())
+
+        tab = std_out_capture.getvalue() + " \n " + std_err_capture.getvalue()
+        return tab

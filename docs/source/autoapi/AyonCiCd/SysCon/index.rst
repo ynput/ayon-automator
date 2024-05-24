@@ -17,7 +17,7 @@ Functions
 
 
 
-.. py:function:: open_software(software_path, ParentPrj: Project.Project, *args)
+.. py:function:: open_software(software_path, ParentPrj: AyonCiCd.Project.Project, *args)
 
    function for running software in a sub process (deprecated its advised to use cmd.py run() Instead)
 

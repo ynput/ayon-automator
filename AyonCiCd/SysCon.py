@@ -1,6 +1,6 @@
 import subprocess
 import os
-from Project import Project
+from .Project import Project
 from pprint import pprint
 
 def open_software(software_path, ParentPrj: Project, *args):

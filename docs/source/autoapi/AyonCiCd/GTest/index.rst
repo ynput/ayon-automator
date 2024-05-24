@@ -28,7 +28,7 @@ Functions
 
 
 
-.. py:function:: run_google_test(GtestPath: str, xmlPath, ParentPrj: Project.Project, *args)
+.. py:function:: run_google_test(GtestPath: str, xmlPath, ParentPrj: AyonCiCd.Project.Project, *args)
 
    function for running google test in a sub process
 

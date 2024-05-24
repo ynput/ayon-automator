@@ -17,7 +17,7 @@ Functions
 
 
 
-.. py:function:: doxygen_run(doxyFile, ParentPrj: Project.Project)
+.. py:function:: doxygen_run(doxyFile, ParentPrj: AyonCiCd.Project.Project)
 
    function to run doxygen in shell.
 

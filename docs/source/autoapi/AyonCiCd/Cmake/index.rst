@@ -17,7 +17,7 @@ Functions
 
 
 
-.. py:function:: cmake_command(ParentPrj: Project.Project, *args)
+.. py:function:: cmake_command(ParentPrj: AyonCiCd.Project.Project, *args)
 
    function for running cmake commands
 

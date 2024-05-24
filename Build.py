@@ -6,7 +6,9 @@ AutomatorMain = Project("AyonAutomator")
 # add packages to the project
 AutomatorMain.add_pip_package("Sphinx")
 AutomatorMain.add_pip_package("furo")
-AutomatorMain.add_pip_package("revitron_sphinx_theme")
+
+AutomatorMain.add_pip_package("sphinx_theme")
+AutomatorMain.add_pip_package("https://github.com/revitron/revitron-sphinx-theme/archive/master.zip")
 AutomatorMain.add_pip_package("sphinx-autoapi")
 AutomatorMain.add_pip_package("myst-parser")
 AutomatorMain.add_pip_package("linkify-it-py")
