@@ -1,10 +1,9 @@
-from pprint import pprint
-from . import Project
 import subprocess
 import os
+from pprint import pprint
+from .Project import Project
 
-
-def DoxygenRun(doxyFile, ParentPrj: Project.Project = None):
+def doxygen_run(doxyFile, ParentPrj: Project):
     """ function to run doxygen in shell. 
 
     Args:
@@ -23,6 +22,6 @@ def DoxygenRun(doxyFile, ParentPrj: Project.Project = None):
     pprint(errors)
     if len(errors) >= 1:
         print("err_leng:", len(errors))
-        ParentPrj.Prj_Run_Errors["doxygen"] = errors
-        ParentPrj.Prj_Exec_error = 1
+        ParentPrj._project_runtime_errors["doxygen"] = errors
+        ParentPrj._project_execuition_error_int = 1
 

@@ -1,9 +1,9 @@
 import subprocess
 import os
-from . import Project
+from .Project import Project
 from pprint import pprint
 
-def open_software(software_path, ParentPrj: Project.Project = None, *args):
+def open_software(software_path, ParentPrj: Project, *args):
     """ function for running software in a sub process (deprecated its advised to use cmd.py run() Instead)
 
     Args:
@@ -22,6 +22,6 @@ def open_software(software_path, ParentPrj: Project.Project = None, *args):
     pprint(errors)
     if len(errors) >= 1:
         print("err_leng:", len(errors))
-        ParentPrj.Prj_Run_Errors["Open_Software"] = errors
-        ParentPrj.Prj_Exec_error = 1
+        ParentPrj._project_runtime_errors["Open_Software"] = errors
+        ParentPrj._project_execuition_error_int = 1
 

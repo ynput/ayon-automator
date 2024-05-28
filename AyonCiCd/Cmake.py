@@ -1,8 +1,7 @@
-from pprint import pprint
 import subprocess
-from . import Project
+from .Project import Project
 
-def Command(ParentPrj: Project.Project = None, *args):
+def cmake_command(ParentPrj: Project, *args):
     """ function for running cmake commands 
 
     Args
@@ -13,11 +12,28 @@ def Command(ParentPrj: Project.Project = None, *args):
     output = result.stdout
     errors = result.stderr
     print("CMake output:")
-    pprint(output)
-    print("CMake errors:")
-    pprint(errors)
-    if len(errors) >= 1:
-        print("err_leng:", len(errors))
-        ParentPrj.Prj_Run_Errors["Cmake"] = errors
-        ParentPrj.Prj_Exec_error = 1
+    print(output)
+    
+    warnings_clean = []
+    errors_clean = []
+    for i in errors.split("CMake "):
+        if (len(i)>1):
+            if("Warning" in i):
+                warnings_clean.append(i.strip("\n"))
+            else:
+                errors_clean.append(i.strip("\n"))
+
+    for warning in warnings_clean:
+        if (len(warning)):
+            print("CMake warnings:")
+            print(warning + "\n")
+
+    for error in errors_clean:
+        if(len(error)):
+            print("CMake errors:")
+            print(error + "\n")
+    
+    if len(errors_clean):
+        ParentPrj._project_runtime_errors["Cmake"] = errors_clean
+        ParentPrj._project_execuition_error_int = 1
 

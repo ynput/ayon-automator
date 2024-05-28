@@ -1,31 +1,33 @@
-from AyonCiCd import Project , cmd
-
+from AyonCiCd import cmd
+from AyonCiCd.Project import Project, Stage
 
 # define a Project that you want to CiCd
-AutomatorMain = Project.Project("AyonAutomator")
+AutomatorMain = Project("AyonAutomator")
 # add packages to the project
-AutomatorMain.addPipPackage("Sphinx")
-AutomatorMain.addPipPackage("furo")
-AutomatorMain.addPipPackage("revitron_sphinx_theme")
-AutomatorMain.addPipPackage("sphinx-autoapi")
-AutomatorMain.addPipPackage("myst-parser")
-AutomatorMain.addPipPackage("linkify-it-py")
-AutomatorMain.addPipPackage("sphinx-rtd-theme") 
+AutomatorMain.add_pip_package("Sphinx")
+AutomatorMain.add_pip_package("furo")
+
+AutomatorMain.add_pip_package("sphinx_theme")
+AutomatorMain.add_pip_package("https://github.com/revitron/revitron-sphinx-theme/archive/master.zip")
+AutomatorMain.add_pip_package("sphinx-autoapi")
+AutomatorMain.add_pip_package("myst-parser")
+AutomatorMain.add_pip_package("linkify-it-py")
+AutomatorMain.add_pip_package("sphinx-rtd-theme") 
 
 
-TestStage = Project.Stage("Test")
-TestStage.addFuncs()
-AutomatorMain.addStage(TestStage)
+TestStage = Stage("Test")
+TestStage.add_funcs()
+AutomatorMain.add_stage(TestStage)
 
 
-DocumentationGenStage = Project.Stage("DocGen")
-DocumentationGenStage.addFuncs( lambda: cmd.run("cd docs && make html", shell=True)
+DocumentationGenStage = Stage("DocGen")
+DocumentationGenStage.add_funcs( lambda: cmd.run("cd docs && make html", shell=True)
 )
 DocumentationGenStage.addArtefactFoulder("docs/build/html")
-AutomatorMain.addStage(DocumentationGenStage)
+AutomatorMain.add_stage(DocumentationGenStage)
 
 
-AutomatorMain.CreateStageGRP("TestAndDocument", TestStage, DocumentationGenStage)
+AutomatorMain.creat_stage_group("TestAndDocument", TestStage, DocumentationGenStage)
 
 with AutomatorMain as PRJ:
-    PRJ.makeClassCliAvailable() 
+    PRJ.make_project_cli_available() 

@@ -13,11 +13,11 @@ Functions
 
 .. autoapisummary::
 
-   AyonCiCd.Cmake.Command
+   AyonCiCd.Cmake.cmake_command
 
 
 
-.. py:function:: Command(ParentPrj: AyonCiCd.Project.Project = None, *args)
+.. py:function:: cmake_command(ParentPrj: AyonCiCd.Project.Project, *args)
 
    function for running cmake commands
 

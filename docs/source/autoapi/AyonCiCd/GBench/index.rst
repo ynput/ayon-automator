@@ -13,11 +13,11 @@ Functions
 
 .. autoapisummary::
 
-   AyonCiCd.GBench.GBnechRun
+   AyonCiCd.GBench.run_google_benchmark
 
 
 
-.. py:function:: GBnechRun(GBenchPath: str, OutFilePath: str, *args)
+.. py:function:: run_google_benchmark(GBenchPath: str, OutFilePath: str, *args)
 
    function for running google benchmark (this function will not register errors as benchmarks should not be used for testing)
 

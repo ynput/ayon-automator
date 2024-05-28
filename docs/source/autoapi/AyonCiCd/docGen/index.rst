@@ -13,11 +13,11 @@ Functions
 
 .. autoapisummary::
 
-   AyonCiCd.docGen.DoxygenRun
+   AyonCiCd.docGen.doxygen_run
 
 
 
-.. py:function:: DoxygenRun(doxyFile, ParentPrj: AyonCiCd.Project.Project = None)
+.. py:function:: doxygen_run(doxyFile, ParentPrj: AyonCiCd.Project.Project)
 
    function to run doxygen in shell.
 

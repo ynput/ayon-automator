@@ -14,7 +14,7 @@ Functions
 .. autoapisummary::
 
    AyonCiCd.GTest.list_test_results
-   AyonCiCd.GTest.GTestRun
+   AyonCiCd.GTest.run_google_test
 
 
 
@@ -28,7 +28,7 @@ Functions
 
 
 
-.. py:function:: GTestRun(GtestPath: str, xmlPath, ParentPrj: AyonCiCd.Project.Project = None, *args)
+.. py:function:: run_google_test(GtestPath: str, xmlPath, ParentPrj: AyonCiCd.Project.Project, *args)
 
    function for running google test in a sub process
 

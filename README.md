@@ -40,8 +40,8 @@ Projects Are build from the following portions.
 This portion will describe what the Cli Availability exposes to you and why and
 when you might want to use it.
 
-- makeClassCliAvailable is a function run in a with block that allows you to
-  start stages and StageGrps from the cli.
+- make_project_cli_available is a function run in a with block that allows you
+  to start stages and StageGrps from the cli.
 - its run within a with statement so that we can use the **exit** function to
   write out everything that happened to the appropriate artifact file. thees
   will later help when debugging because you will have everything that happened
@@ -49,12 +49,12 @@ when you might want to use it.
 
 ```py
 with ProjectName as PRJ:
-    PRJ.makeClassCliAvailable()
+    PRJ.make_project_cli_available()
 ```
 
 Example Usage `python AutomatorScript.py runStageGrp StageGrpName`
 
-- The makeClassCliAvailable function exposes the following functions
+- The make_project_cli_available function exposes the following functions
 
 | Variable          | Description                                                                                                                                                                                                        |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -64,9 +64,9 @@ Example Usage `python AutomatorScript.py runStageGrp StageGrpName`
 | `setVar`          | setVar allows you to set Variables from within your script or from the cli. they will also be stored in the Variables.json file and thereby be presisent                                                           |
 | `runStageGRP`     | runStageGRP allows you to run a single stage Grp this might be usefull if you need to complie your code without testing it.                                                                                        |
 
-- Theoretically the makeClassCliAvailable will expose all class functions but
-  its not advised to use it this way. But if you want to do so. Do it on your
-  own Risk
+- Theoretically the make_project_cli_available will expose all class functions
+  but its not advised to use it this way. But if you want to do so. Do it on
+  your own Risk
 
 # How to
 
@@ -86,9 +86,9 @@ Project.addPipPackage("pytest") #(optional) define some packages that will be in
 
 ```py
 Stage = Project.Stage("StageName") # The stage name is the name that execSingleStage will take in order to run your stage from the CLI
-Stage.addFuncs(lambda: someFunc(),) # addFuncs allows you to add functions to your stages. they will be run in sequence in the same order as defined here. you can add as many as you want
+Stage.add_funcs(lambda: someFunc(),) # addFuncs allows you to add functions to your stages. they will be run in sequence in the same order as defined here. you can add as many as you want
 BuildStage.addArtefactFoulder("/path/to/artefacts/foulder") # adding artifacts allows you to copy things that e.g your build process created to the Automator Project artifacts folder so you can upload everything together. (this function also allows adding files btw)
-Project.addStage(Stage)
+Project.add_stage(Stage)
 ```
 
 ### Define a stageGRP (Optional)
@@ -101,7 +101,7 @@ Project.CreateStageGRP("StageGrpName", StageInstanceA, StageInstanceB)
 
 ```py
 with ProjectName as PRJ:
-    PRJ.makeClassCliAvailable() # makeClassCliAvailable should be the last thing in your project file as everything after this will not be available to the CLI
+    PRJ.make_project_cli_available() # make_project_cli_available should be the last thing in your project file as everything after this will not be available to the CLI
 ```
 
 ## How to use your project
