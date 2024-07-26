@@ -10,6 +10,7 @@ import site
 from contextlib import redirect_stdout, redirect_stderr
 from pprint import pprint
 from datetime import datetime
+from . import helpers
 
 class Project():
     """Class to describe a project for execution usage.
@@ -256,7 +257,7 @@ class Project():
         print()
 
         with open(filePos, "w") as file:
-            output = Stage.exec_stage()
+            output = Stage.exec_stage(self)
             file.write(output)
             
         print("-"*80)
@@ -436,7 +437,7 @@ class Stage:
             except shutil.Error:
                 print("No artefacts to Copy")
 
-    def exec_stage(self):
+    def exec_stage(self, parent_prj:Project):
         """ this function will be called by every system that intends executing the stage 
         this function will capture output that's running in it and will return it
 
@@ -450,7 +451,19 @@ class Stage:
         with redirect_stderr(std_err_capture):
             with redirect_stdout(std_out_capture):
                 for func in self.stage_function_list:
-                    func()
+
+                    print("#"*shutil.get_terminal_size().columns)
+                    print(f"FuncName: {func.__name__}()")
+                    print("*"*shutil.get_terminal_size().columns)
+                    try: 
+                        func()
+                    except helpers.FaileException as e:
+                        print(f"Test FAILED msg({str(e)})")
+                        parent_prj._project_runtime_errors[func.__name__] = str(e) 
+                        parent_prj._project_execuition_error_int = 1
+
+                    print("*"*shutil.get_terminal_size().columns)
+                    print()
                 for artefactPath in self.stage_artefact_list:
                     self.copy_artefact(artefactPath)
         sys.stdout.write(std_out_capture.getvalue())
