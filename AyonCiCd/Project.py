@@ -1,5 +1,6 @@
 import io
 import os
+from typing import Any, Dict, List
 import venv
 import sys
 import shutil
@@ -54,15 +55,17 @@ class Project:
                 f"{self.project_name}__project_internal_varialbes.json",
             )
         )
-        self._project_internal_varialbes = {}
+        self._project_internal_varialbes: Dict[Any, Any] = {}
         # artefacts
         self._build_artefacts_out_path = os.path.abspath(
             os.path.join(self.base_output_folder_path, "artefacts")
         )
         # stages
-        self._project_stage_list = []
+        self._project_stage_list: List[Any] = []
         # stage groups
-        self._project_stage_groups_list = {}
+        self._project_stage_groups_list: Dict[Any, Any] = (
+            {}
+        )  # TODO rename to make name a dict
         # python infos
         self._runtime_python_version_major_minor_str = (
             str(sys.version_info.major) + "." + str(sys.version_info.minor)
@@ -71,7 +74,7 @@ class Project:
         self._build_venv_abs_path = os.path.abspath(
             os.path.join(self.base_output_folder_path, (project_name + "_BuildVenv"))
         )
-        self._project_requested_pip_packes = []
+        self._project_requested_pip_packes: List[Any] = []
         # Exec Data
         self._project_runtime_errors = {}
         self._project_execuition_error_int = 0
@@ -377,8 +380,13 @@ class Project:
         if sys.platform.lower() == "win32":
             cmd_extend = "cmd /c"
 
+        # command = [
+        #     f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && {pip_install_command}"
+        # ]
         command = [
-            f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && {pip_install_command}"
+            "bash",
+            "-c",
+            f'"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)}"',
         ]
 
         process = subprocess.Popen(
@@ -388,9 +396,9 @@ class Project:
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
-
-        for stdout_line in iter(process.stdout.readline, ""):
-            print(stdout_line)
+        if process.stdout is not None:
+            for stdout_line in iter(process.stdout.readline, ""):
+                print(stdout_line)
 
         return_code = process.wait()
         if return_code:
@@ -425,10 +433,10 @@ class Stage:
     """
 
     def __init__(self, StageName: str) -> None:
-        self.stage_function_list = []
-        self.stage_artefact_list = []
-        self.StageName = StageName
-        self.parentOutputFoulder = ""
+        self.stage_function_list: List[Any] = []
+        self.stage_artefact_list: List[Any] = []
+        self.StageName: str = StageName
+        self.parentOutputFoulder: str = ""
 
     def add_single_func(self, funcInstance) -> None:
         """append a lambda to the stage function list.
