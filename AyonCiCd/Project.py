@@ -76,7 +76,7 @@ class Project:
         )
         self._project_requested_pip_packes: List[Any] = []
         # Exec Data
-        self._project_runtime_errors = {}
+        self._project_runtime_errors: Dict[Any, Any] = {}
         self._project_execuition_error_int = 0
         self._is_setup_process = False
 
