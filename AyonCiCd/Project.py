@@ -380,13 +380,8 @@ class Project:
         if sys.platform.lower() == "win32":
             cmd_extend = "cmd /c"
 
-        # command = [
-        #     f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && {pip_install_command}"
-        # ]
         command = [
-            "bash",
-            "-c",
-            f'"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)}"',
+            f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && {pip_install_command}"
         ]
 
         process = subprocess.Popen(
