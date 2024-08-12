@@ -82,6 +82,7 @@ class Project:
 
         if "setup" in sys.argv:
             self._is_setup_process = True
+            self.setup()
 
     def __del__(self):
         """function to cast sys.exit(1) if project errors have accrued. this is important as sys.exit(1) will cause github action to flag the run as failed"""
@@ -373,7 +374,7 @@ class Project:
         pip_install_command = ""
         if len(pip_package_list):
             pip_install_list = " ".join(pip_package_list)
-            pip_install_command = f"pip install {pip_install_list}"
+            pip_install_command = f"&& pip install {pip_install_list}"
 
         cmd_extend = ""
 
@@ -381,7 +382,7 @@ class Project:
             cmd_extend = "cmd /c"
 
         command = [
-            f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip && {pip_install_command}"
+            f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip {pip_install_command}"
         ]
 
         process = subprocess.Popen(
