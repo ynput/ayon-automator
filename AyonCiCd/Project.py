@@ -37,7 +37,7 @@ class Func:
                 args.append(i())
             except Exception:
                 args.append(i)
-        for key, val in self.kwargs:
+        for key, val in self.kwargs.items():
             eval_key: Any
             eval_val: Any
             try:
