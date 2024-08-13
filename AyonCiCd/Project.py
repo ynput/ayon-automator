@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import io
 import os
 from typing import Any, Dict, List
@@ -12,6 +13,24 @@ from contextlib import redirect_stdout, redirect_stderr
 from pprint import pprint
 from datetime import datetime
 from . import helpers
+
+
+class Func:
+    func_name: str
+    func: Callable[..., Any]
+    args: List[Any]
+    kwargs: Dict[Any, Any]
+
+    def __init__(
+        self, name: str, in_func_name: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        self.func_name = name
+        self.func = in_func_name
+        self.args = list(args)
+        self.kwargs = dict(kwargs)
+
+    def run(self):
+        self.func(*self.args, **self.kwargs)
 
 
 class Project:
@@ -429,12 +448,12 @@ class Stage:
     """
 
     def __init__(self, StageName: str) -> None:
-        self.stage_function_list: List[Any] = []
+        self.stage_function_list: List[Func] = []
         self.stage_artefact_list: List[Any] = []
         self.StageName: str = StageName
         self.parentOutputFoulder: str = ""
 
-    def add_single_func(self, funcInstance) -> None:
+    def add_single_func(self, funcInstance: Func) -> None:
         """append a lambda to the stage function list.
         Args:
             funcInstance:
@@ -442,13 +461,13 @@ class Stage:
 
         self.stage_function_list.append(funcInstance)
 
-    def add_funcs(self, *args) -> None:
+    def add_funcs(self, *args: Func) -> None:
         """append a list off lambdas to the stages function list. They will be added via a for loop
         *args:
         """
 
-        for lambda_func in args:
-            self.stage_function_list.append(lambda_func)
+        for func in args:
+            self.stage_function_list.append(func)
 
     def addArtefactFoulder(self, fouderPath) -> None:
         """adds an artifact to the stages stage_artefact_list list. this function also allows adding files as artifact's and is not yet renamed
@@ -508,13 +527,13 @@ class Stage:
             with redirect_stdout(std_out_capture):
                 for func in self.stage_function_list:
                     print("#" * shutil.get_terminal_size().columns)
-                    print(f"FuncName: {func.__name__}()")
+                    print(f"FuncName: {func.func_name}")
                     print("*" * shutil.get_terminal_size().columns)
                     try:
-                        func()
+                        func.run()
                     except helpers.FaileException as e:
                         print(f"Test FAILED msg({str(e)})")
-                        parent_prj._project_runtime_errors[func.__name__] = str(e)
+                        parent_prj._project_runtime_errors[func.func.__name__] = str(e)
                         parent_prj._project_execuition_error_int = 1
                     print("*" * shutil.get_terminal_size().columns)
                     print()
