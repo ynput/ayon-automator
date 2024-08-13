@@ -471,7 +471,7 @@ class Stage:
         self.stage_function_list: List[Func] = []
         self.stage_artefact_list: List[Any] = []
         self.StageName: str = StageName
-        self.parentOutputFoulder: str = ""
+        self.parentOutputFoulder = None
 
     def add_single_func(self, funcInstance: Func) -> None:
         """append a lambda to the stage function list.
@@ -497,28 +497,24 @@ class Stage:
 
         self.stage_artefact_list.append(fouderPath)
 
-    def copy_artefact(self, artefactPath) -> None:
+    def copy_artefact(self, artefact_root, artefact_dest) -> None:
         """function to copy an artifact to its appropriate place
         Args:
             artefactPath ():
         """
 
-        artefactBaseFoulder = os.path.join(
-            self.parentOutputFoulder, (self.StageName + "_Artefacts")
-        )
-
-        if not os.path.exists(artefactBaseFoulder):
-            os.makedirs(artefactBaseFoulder)
+        if not os.path.exists(artefact_dest):
+            os.makedirs(artefact_dest)
 
         artefactDestinationPath = os.path.join(
-            artefactBaseFoulder, os.path.basename(artefactPath)
+            artefact_dest, os.path.basename(artefact_root)
         )
 
-        if os.path.isfile(artefactPath):
+        if os.path.isfile(artefact_root):
             try:
                 os.makedirs(os.path.dirname(artefactDestinationPath), exist_ok=True)
                 shutil.copy(
-                    os.path.abspath(artefactPath),
+                    os.path.abspath(artefact_root),
                     os.path.abspath(artefactDestinationPath),
                 )
             except shutil.Error:
@@ -529,7 +525,7 @@ class Stage:
                 if os.path.exists(artefactDestinationPath):
                     print("dir")
                     shutil.rmtree(artefactDestinationPath)
-                shutil.copytree(os.path.abspath(artefactPath), artefactDestinationPath)
+                shutil.copytree(os.path.abspath(artefact_dest), artefactDestinationPath)
             except shutil.Error:
                 print("No artefacts to Copy")
 
@@ -559,7 +555,14 @@ class Stage:
                     print()
 
                 for artefactPath in self.stage_artefact_list:
-                    self.copy_artefact(artefactPath)
+
+                    self.copy_artefact(
+                        artefactPath,
+                        os.path.join(
+                            parent_prj._build_artefacts_out_path,
+                            f"{self.StageName}_Artefacts",
+                        ),
+                    )
 
         sys.stdout.write(std_out_capture.getvalue())
         sys.stderr.write(std_err_capture.getvalue())
