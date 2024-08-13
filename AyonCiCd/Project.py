@@ -30,7 +30,27 @@ class Func:
         self.kwargs = dict(kwargs)
 
     def run(self):
-        self.func(*self.args, **self.kwargs)
+        args = []
+        kwargs = {}
+        for i in self.args:
+            try:
+                args.append(i())
+            except Exception:
+                args.append(i)
+        for key, val in self.kwargs:
+            eval_key: Any
+            eval_val: Any
+            try:
+                eval_key = key()
+            except Exception:
+                eval_key = key
+            try:
+                eval_val = val()
+            except Exception:
+                eval_val = val
+            kwargs[eval_key] = eval_val
+
+        self.func(*args, **kwargs)
 
 
 class Project:
