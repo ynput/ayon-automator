@@ -190,6 +190,11 @@ class Project:
         self._add_prj_build_venv_path_to_sys_path()
         self._load_vars_from_prj_json_file()
 
+    def setup_prj(self):
+        if "setup" in sys.argv:
+            self._is_setup_process = True
+            self.setup()
+
     def _add_prj_build_venv_path_to_sys_path(self):
         """function for adding the side packages installed under the venv to the current python accessible path.
         this allows access to the packages without having to activate the venv"""
@@ -403,6 +408,7 @@ class Project:
 
         return activate_cmd
 
+
     def _install_pip_packages_in_venv(self, venv_path: str, pip_package_list: list):
         """helper function that will activate the venv, upgrade pip and install the package list. this will be executed in a subprocess
         Args:
@@ -415,31 +421,34 @@ class Project:
             pip_install_list = " ".join(pip_package_list)
             pip_install_command = f"&& pip install {pip_install_list}"
 
-        cmd_extend = ""
+        command = []
 
         if sys.platform.lower() == "win32":
-            cmd_extend = "cmd /c"
+            command =  ["cmd","/c"]
 
-        command = [
-            f"{cmd_extend} {self.__get_venv_activate_cmd(venv_path)} && python -m pip install --upgrade pip {pip_install_command}"
-        ]
+            command.extend([
+                self.__get_venv_activate_cmd(venv_path),"&&", "python", "-m", "pip" ,"install" ,"--upgrade" ,"pip"
+            ])
+
+            if pip_install_command:
+                command.append(pip_install_command)
+        else:
+            command = [
+                f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip {pip_install_command}"
+            ]
 
         process = subprocess.Popen(
             command,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
         )
-        if process.stdout is not None:
-            for stdout_line in iter(process.stdout.readline, ""):
-                print(stdout_line)
 
         return_code = process.wait()
         if return_code:
             raise subprocess.CalledProcessError(return_code, command)
 
         print("installed all packages")
+
+
 
     def add_pip_package(self, packageName: str) -> None:
         """appends a package name to _project_requested_pip_packes list so that _install_pip_packages_in_venv can consume them
