@@ -220,7 +220,7 @@ class Project:
         venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
 
         current_pyth = os.environ.get('PATH', '')
-        new_path = f"{venv_bin_path}:{current_pyth}" if current_pyth else venv_bin_path
+        new_path = f"{venv_bin_path}{os.pathsep}{current_pyth}" if current_pyth else venv_bin_path
         os.environ['PATH'] = new_path
 
     def make_project_cli_available(self):
