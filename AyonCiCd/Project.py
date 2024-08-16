@@ -219,6 +219,13 @@ class Project:
 
         venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
 
+        if sys.platform.startswith("win"):
+            venv_bin_path = os.path.join(self._build_venv_abs_path, "Scripts")
+        elif sys.platform.startswith("linux"):
+            venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
+        else:
+            raise RuntimeError("Your platform is not suported")
+
         current_pyth = os.environ.get('PATH', '')
         new_path = f"{venv_bin_path}{os.pathsep}{current_pyth}" if current_pyth else venv_bin_path
         os.environ['PATH'] = new_path
