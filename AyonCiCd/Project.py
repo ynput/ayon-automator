@@ -119,10 +119,6 @@ class Project:
         self._project_execuition_error_int = 0
         self._is_setup_process = False
 
-        if "setup" in sys.argv:
-            self._is_setup_process = True
-            self.setup()
-
     def __del__(self):
         """function to cast sys.exit(1) if project errors have accrued. this is important as sys.exit(1) will cause github action to flag the run as failed"""
         """it is possible that we are not casing an Error while in the Stage Execution. (this is so we can run multiple tests and get more data in one run)
