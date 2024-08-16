@@ -417,32 +417,26 @@ class Project:
 
 
     def _install_pip_packages_in_venv(self, venv_path: str, pip_package_list: list):
-        """helper function that will activate the venv, upgrade pip and install the package list. this will be executed in a subprocess
+        """helper function that will activate the venv, upgrade pip and install
+        the package list. this will be executed in a subprocess
         Args:
             venv_path:
             pip_package_list:
         """
-
         pip_install_command = ""
         if len(pip_package_list):
             pip_install_list = " ".join(pip_package_list)
-            pip_install_command = f"&& pip install {pip_install_list}"
+            pip_install_command = f"pip install {pip_install_list}"
 
         command = []
-
         if sys.platform.lower() == "win32":
-            command =  ["cmd","/c"]
-
-            command.extend([
-                self.__get_venv_activate_cmd(venv_path),"&&", "python", "-m", "pip" ,"install" ,"--upgrade" ,"pip"
-            ])
-
+            command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"'
             if pip_install_command:
-                command.append(pip_install_command)
+                command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"'
         else:
-            command = [
-                f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip {pip_install_command}"
-            ]
+            command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"]
+            if pip_install_command:
+                command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"]
 
         process = subprocess.Popen(
             command,
@@ -452,7 +446,6 @@ class Project:
         return_code = process.wait()
         if return_code:
             raise subprocess.CalledProcessError(return_code, command)
-
         print("installed all packages")
 
 
