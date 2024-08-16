@@ -213,6 +213,11 @@ class Project:
         venv_site_packages = os.path.abspath(output.decode("utf-8").strip())
         site.addsitedir(venv_site_packages)
 
+        current_pythonpath = os.environ.get('PYTHONPATH', '')
+        new_pythonpath = f"{venv_site_packages}:{current_pythonpath}" if current_pythonpath else venv_site_packages
+        os.environ['PYTHONPATH'] = new_pythonpath
+        
+
     def make_project_cli_available(self):
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
         this allows usage from cli and access to all functions in this class"""
