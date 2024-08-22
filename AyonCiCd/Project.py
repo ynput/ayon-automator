@@ -119,6 +119,7 @@ class Project:
         self._project_execuition_error_int = 0
         self._is_setup_process = False
 
+
     def __del__(self):
         """function to cast sys.exit(1) if project errors have accrued. this is important as sys.exit(1) will cause github action to flag the run as failed"""
         """it is possible that we are not casing an Error while in the Stage Execution. (this is so we can run multiple tests and get more data in one run)
@@ -211,6 +212,23 @@ class Project:
         output = subprocess.check_output([venv_python, "-c", command])
         venv_site_packages = os.path.abspath(output.decode("utf-8").strip())
         site.addsitedir(venv_site_packages)
+
+        current_pythonpath = os.environ.get('PYTHONPATH', '')
+        new_pythonpath = f"{venv_site_packages}:{current_pythonpath}" if current_pythonpath else venv_site_packages
+        os.environ['PYTHONPATH'] = new_pythonpath
+
+        venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
+
+        if sys.platform.startswith("win"):
+            venv_bin_path = os.path.join(self._build_venv_abs_path, "Scripts")
+        elif sys.platform.startswith("linux"):
+            venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
+        else:
+            raise RuntimeError("Your platform is not suported")
+
+        current_pyth = os.environ.get('PATH', '')
+        new_path = f"{venv_bin_path}{os.pathsep}{current_pyth}" if current_pyth else venv_bin_path
+        os.environ['PATH'] = new_path
 
     def make_project_cli_available(self):
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
@@ -406,32 +424,26 @@ class Project:
 
 
     def _install_pip_packages_in_venv(self, venv_path: str, pip_package_list: list):
-        """helper function that will activate the venv, upgrade pip and install the package list. this will be executed in a subprocess
+        """helper function that will activate the venv, upgrade pip and install
+        the package list. this will be executed in a subprocess
         Args:
             venv_path:
             pip_package_list:
         """
-
         pip_install_command = ""
         if len(pip_package_list):
             pip_install_list = " ".join(pip_package_list)
-            pip_install_command = f"&& pip install {pip_install_list}"
+            pip_install_command = f"pip install {pip_install_list}"
 
         command = []
-
         if sys.platform.lower() == "win32":
-            command =  ["cmd","/c"]
-
-            command.extend([
-                self.__get_venv_activate_cmd(venv_path),"&&", "python", "-m", "pip" ,"install" ,"--upgrade" ,"pip"
-            ])
-
+            command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"'
             if pip_install_command:
-                command.append(pip_install_command)
+                command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"'
         else:
-            command = [
-                f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip {pip_install_command}"
-            ]
+            command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"]
+            if pip_install_command:
+                command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"]
 
         process = subprocess.Popen(
             command,
@@ -441,7 +453,6 @@ class Project:
         return_code = process.wait()
         if return_code:
             raise subprocess.CalledProcessError(return_code, command)
-
         print("installed all packages")
 
 
