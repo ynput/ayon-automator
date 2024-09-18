@@ -87,6 +87,7 @@ class Project:
         self.project_name = project_name
         self.base_output_folder_path = os.path.abspath(project_name + "_cicd")
         self._root_exec_script = inspect.stack()[1].filename
+
         # project vars
         self.var_json_file_path = os.path.abspath(
             os.path.join(
@@ -95,6 +96,10 @@ class Project:
             )
         )
         self._project_internal_varialbes: Dict[Any, Any] = {}
+        if os.path.exists(self.var_json_file_path):
+            with open(self.var_json_file_path, "r") as var_file:
+                self._project_internal_varialbes = json.load(var_file)
+
         # artefacts
         self._build_artefacts_out_path = os.path.abspath(
             os.path.join(self.base_output_folder_path, "artefacts")
