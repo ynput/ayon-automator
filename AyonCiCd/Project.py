@@ -33,6 +33,9 @@ class Func:
         args = []
         kwargs = {}
         for i in self.args:
+            if isinstance(i, Func):
+                args.append(i.run())
+                continue
             try:
                 args.append(i())
             except Exception:
@@ -50,7 +53,7 @@ class Func:
                 eval_val = val
             kwargs[eval_key] = eval_val
 
-        self.func(*args, **kwargs)
+        return self.func(*args, **kwargs)
 
 
 class Project:
