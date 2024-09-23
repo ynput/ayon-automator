@@ -1,14 +1,19 @@
 import subprocess
+import os
+from typing import Optional
 from .Project import Project
 
-def cmake_command(ParentPrj: Project, *args):
+def cmake_command(ParentPrj: Project, env: Optional[os._Environ] , *args):
     """ function for running cmake commands 
 
     Args
         ParentPrj: parent project instance to register errors against 
         *args: arguments to be costed to cmake CLI
     """
-    result = subprocess.run(["cmake", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if not env:
+        env = os.environ.copy()
+
+    result = subprocess.run(["cmake", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
     output = result.stdout
     errors = result.stderr
     print("CMake output:")
