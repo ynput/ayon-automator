@@ -198,7 +198,7 @@ class Project:
     def setup_prj(self):
         if "setup" in sys.argv:
             self._is_setup_process = True
-            self.setup()
+        self.setup()
 
     def _add_prj_build_venv_path_to_sys_path(self):
         """function for adding the side packages installed under the venv to the current python accessible path.
