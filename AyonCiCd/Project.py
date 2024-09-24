@@ -138,6 +138,30 @@ class Project:
         self._is_setup_process = False
         self._parser = argparse.ArgumentParser(self.project_name)
 
+        self._parser.add_argument("--setup", 
+                                  action='store_true', 
+                                  help="Setup the Project. this is exclusive to all other arguments")
+
+        self._parser.add_argument("--setVars",
+                              dest="extra_var_dict",
+                              action=_StoreDictKeyPair, 
+                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'")
+
+        stage_exex_grps = self._parser.add_mutually_exclusive_group()
+        stage_exex_grps.add_argument("--execSingleStage", 
+                              help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
+                              type=str)
+        stage_exex_grps.add_argument("--execAllStages", 
+                              help="Executes all stages in the oder",
+                              type=str)
+        stage_exex_grps.add_argument("--runStageGRP", 
+                              help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
+                              type=str)
+
+        self._cmd_args = self._parser.parse_args()
+
+
+
 
     def __del__(self):
         """function to cast sys.exit(1) if project errors have accrued. this is important as sys.exit(1) will cause github action to flag the run as failed"""
@@ -207,7 +231,7 @@ class Project:
         self._load_vars_from_prj_json_file()
 
     def setup_prj(self):
-        if "setup" in sys.argv:
+        if self._cmd_args.setup:
             self._is_setup_process = True
         self.setup()
 
@@ -253,34 +277,11 @@ class Project:
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
         this allows usage from cli and access to all functions in this class"""
        
-        self._parser.add_argument("--setup", 
-                                  action='store_true', 
-                                  help="Setup the Project. this is exclusive to all other arguments")
 
-        self._parser.add_argument("--setVars",
-                              dest="extra_var_dict",
-                              action=_StoreDictKeyPair, 
-                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'")
-
-        stage_exex_grps = self._parser.add_mutually_exclusive_group()
-        stage_exex_grps.add_argument("--execSingleStage", 
-                              help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
-                              type=str)
-        stage_exex_grps.add_argument("--execAllStages", 
-                              help="Executes all stages in the oder",
-                              type=str)
-        stage_exex_grps.add_argument("--runStageGRP", 
-                              help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
-                              type=str)
 
         
 
-        self._cmd_args = self._parser.parse_args()
 
-        if self._cmd_args.setup:
-            self._is_setup_process = True
-            self.setup()
-            sys.exit(0)
         
         if self._cmd_args.extra_var_dict:
             self._project_internal_varialbes.update(self._cmd_args.extra_var_dict)
