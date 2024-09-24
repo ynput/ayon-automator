@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import inspect
 import json
+import ast
 import site
 import argparse
 from contextlib import redirect_stdout, redirect_stderr
@@ -17,10 +18,11 @@ from . import helpers
 
 class _StoreDictKeyPair(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        extra_env_var_dict = {}
-        for kv in values.split(","):
-            k, v = kv.split("=")
-            extra_env_var_dict[k] = v
+        try:
+            extra_env_var_dict = json.loads(values)
+
+        except json.JSONDecodeError:
+            raise argparse.ArgumentTypeError(f"Invalid dictionary string: {values}")
         setattr(namespace, self.dest, extra_env_var_dict)
 
 class Func:
@@ -258,9 +260,9 @@ class Project:
         self._parser.add_argument("--setVars",
                               dest="extra_var_dict",
                               action=_StoreDictKeyPair, 
-                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}")
+                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'")
 
-        stage_exex_grps = self._parser.add_mutually_exclusive_group(required=True)
+        stage_exex_grps = self._parser.add_mutually_exclusive_group()
         stage_exex_grps.add_argument("--execSingleStage", 
                               help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
                               type=str)
@@ -281,8 +283,8 @@ class Project:
             sys.exit(0)
         
         if self._cmd_args.extra_var_dict:
-            for var_key, var_val in self._cmd_args.extra_var_dict.items():
-                self.setVar(var_key, var_val) 
+            self._project_internal_varialbes.update(self._cmd_args.extra_var_dict)
+            self.log("Add Vars from CMD", self._cmd_args.extra_var_dict)
         
         if stage_name := self._cmd_args.execSingleStage:
             self.execSingleStage(stage_name)
