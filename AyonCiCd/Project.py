@@ -9,11 +9,19 @@ import subprocess
 import inspect
 import json
 import site
+import argparse
 from contextlib import redirect_stdout, redirect_stderr
 from pprint import pprint
 from datetime import datetime
 from . import helpers
 
+class _StoreDictKeyPair(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        extra_env_var_dict = {}
+        for kv in values.split(","):
+            k, v = kv.split("=")
+            extra_env_var_dict[k] = v
+        setattr(namespace, self.dest, extra_env_var_dict)
 
 class Func:
     func_name: str
@@ -126,6 +134,7 @@ class Project:
         self._project_runtime_errors: Dict[Any, Any] = {}
         self._project_execuition_error_int = 0
         self._is_setup_process = False
+        self._parser = argparse.ArgumentParser(self.project_name)
 
 
     def __del__(self):
@@ -241,14 +250,49 @@ class Project:
     def make_project_cli_available(self):
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
         this allows usage from cli and access to all functions in this class"""
+       
+        self._parser.add_argument("--setup", 
+                                  action='store_true', 
+                                  help="Setup the Project. this is exclusive to all other arguments")
 
-        if len(sys.argv) > 1:
-            function_name = sys.argv[1]
-            if hasattr(self, function_name) and callable(getattr(self, function_name)):
-                params = sys.argv[2:]
-                getattr(self, function_name)(*params)
-            else:
-                print("Function not found or not callable!")
+        self._parser.add_argument("--setVars",
+                              dest="extra_var_dict",
+                              action=_StoreDictKeyPair, 
+                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}")
+
+        stage_exex_grps = self._parser.add_mutually_exclusive_group(required=True)
+        stage_exex_grps.add_argument("--execSingleStage", 
+                              help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
+                              type=str)
+        stage_exex_grps.add_argument("--execAllStages", 
+                              help="Executes all stages in the oder",
+                              type=str)
+        stage_exex_grps.add_argument("--runStageGRP", 
+                              help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
+                              type=str)
+
+        
+
+        self._cmd_args = self._parser.parse_args()
+
+        if self._cmd_args.setup:
+            self._is_setup_process = True
+            self.setup()
+            sys.exit(0)
+        
+        if self._cmd_args.extra_var_dict:
+            for var_key, var_val in self._cmd_args.extra_var_dict.items():
+                self.setVar(var_key, var_val) 
+        
+        if stage_name := self._cmd_args.execSingleStage:
+            self.execSingleStage(stage_name)
+            return
+        if self._cmd_args.execAllStages:
+            self.execAllStages()
+            return
+        if stage_grp_name := self._cmd_args.runStageGRP:
+            self.runStageGRP(stage_grp_name)
+            return
 
     # Helper stage_function_list
     def stop_execution(self):
