@@ -16,7 +16,7 @@ from pprint import pprint
 from datetime import datetime
 from . import helpers
 
-class _StoreDictKeyPair(argparse.Action):
+class Cmd_StoreDictKeyPair(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         try:
             extra_env_var_dict = json.loads(values)
@@ -144,7 +144,7 @@ class Project:
 
         self._parser.add_argument("--setVars",
                               dest="extra_var_dict",
-                              action=_StoreDictKeyPair, 
+                              action=Cmd_StoreDictKeyPair, 
                               help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'")
 
         stage_exex_grps = self._parser.add_mutually_exclusive_group()
@@ -158,10 +158,35 @@ class Project:
                               help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
                               type=str)
 
-        self._cmd_args = self._parser.parse_args()
 
+    def add_cmd_arg(self, *args, **kwargs):
+        """ allows you to add an argparse argument to the project
+            *args: 
+            **kwargs: 
+        """
+        self._parser.add_argument(*args, **kwargs)
 
+    def add_cmd_arg_grp(self, *args, **kwargs):
+        """ allows you to add an argparse argument group to the project
+            *args: 
+            **kwargs: 
 
+        Returns: returns the argument group instance
+            
+        """
+        grp = self._parser.add_argument_group(*args, **kwargs)
+        return grp
+
+    def add_exclusive_arg_grp(self, *args, **kwargs):
+        """ allows you to add a mutually exclusive argparse group to the project
+            *args: 
+            **kwargs: 
+
+        Returns: returns the mutually exclusive group instance
+            
+        """
+        grp = self._parser.add_mutually_exclusive_group(*args, **kwargs)
+        return grp
 
     def __del__(self):
         """function to cast sys.exit(1) if project errors have accrued. this is important as sys.exit(1) will cause github action to flag the run as failed"""
@@ -231,9 +256,19 @@ class Project:
         self._load_vars_from_prj_json_file()
 
     def setup_prj(self):
+
+        """ defines the place where the setup for the project should be run. 
+        needs to be before any type of import happes that is installed into the prj venv. 
+        but after project definition arg adding or pip pacakge adding
+
+        Returns: the argparse arguments after parse_args()
+            
+        """
+        self._cmd_args = self._parser.parse_args()
         if self._cmd_args.setup:
             self._is_setup_process = True
         self.setup()
+        return self._cmd_args
 
     def _add_prj_build_venv_path_to_sys_path(self):
         """function for adding the side packages installed under the venv to the current python accessible path.
