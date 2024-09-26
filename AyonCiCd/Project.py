@@ -16,6 +16,7 @@ from pprint import pprint
 from datetime import datetime
 from . import helpers
 
+
 class Cmd_StoreDictKeyPair(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         try:
@@ -24,6 +25,7 @@ class Cmd_StoreDictKeyPair(argparse.Action):
         except json.JSONDecodeError:
             raise argparse.ArgumentTypeError(f"Invalid dictionary string: {values}")
         setattr(namespace, self.dest, extra_env_var_dict)
+
 
 class Func:
     func_name: str
@@ -99,7 +101,7 @@ class Project:
         # project
         self.project_name = project_name
         self.base_output_folder_path = os.path.abspath(project_name + "_cicd")
-        self._root_exec_script = inspect.stack()[1].filename
+        # self._root_exec_script = inspect.stack()[1].filename
 
         # project vars
         self.var_json_file_path = os.path.abspath(
@@ -138,52 +140,37 @@ class Project:
         self._is_setup_process = False
         self._parser = argparse.ArgumentParser(self.project_name)
 
-        self._parser.add_argument("--setup", 
-                                  action='store_true', 
-                                  help="Setup the Project. this is exclusive to all other arguments")
-
-        self._parser.add_argument("--setVars",
-                              dest="extra_var_dict",
-                              action=Cmd_StoreDictKeyPair, 
-                              help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'")
-
-        stage_exex_grps = self._parser.add_mutually_exclusive_group()
-        stage_exex_grps.add_argument("--execSingleStage", 
-                              help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
-                              type=str)
-        stage_exex_grps.add_argument("--execAllStages", 
-                              help="Executes all stages in the oder",
-                              type=str)
-        stage_exex_grps.add_argument("--runStageGRP", 
-                              help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
-                              type=str)
-
+        self._parser.add_argument(
+            "--setup",
+            action="store_true",
+            help="Setup the Project. this is exclusive to all other arguments",
+        )
 
     def add_cmd_arg(self, *args, **kwargs):
-        """ allows you to add an argparse argument to the project
-            *args: 
-            **kwargs: 
+        """allows you to add an argparse argument to the project
+        *args:
+        **kwargs:
         """
         self._parser.add_argument(*args, **kwargs)
 
     def add_cmd_arg_grp(self, *args, **kwargs):
-        """ allows you to add an argparse argument group to the project
-            *args: 
-            **kwargs: 
+        """allows you to add an argparse argument group to the project
+            *args:
+            **kwargs:
 
         Returns: returns the argument group instance
-            
+
         """
         grp = self._parser.add_argument_group(*args, **kwargs)
         return grp
 
     def add_exclusive_arg_grp(self, *args, **kwargs):
-        """ allows you to add a mutually exclusive argparse group to the project
-            *args: 
-            **kwargs: 
+        """allows you to add a mutually exclusive argparse group to the project
+            *args:
+            **kwargs:
 
         Returns: returns the mutually exclusive group instance
-            
+
         """
         grp = self._parser.add_mutually_exclusive_group(*args, **kwargs)
         return grp
@@ -256,19 +243,22 @@ class Project:
         self._load_vars_from_prj_json_file()
 
     def setup_prj(self):
-
-        """ defines the place where the setup for the project should be run. 
-        needs to be before any type of import happes that is installed into the prj venv. 
+        """defines the place where the setup for the project should be run.
+        needs to be before any type of import happes that is installed into the prj venv.
         but after project definition arg adding or pip pacakge adding
 
         Returns: the argparse arguments after parse_args()
-            
+
         """
-        self._cmd_args = self._parser.parse_args()
-        if self._cmd_args.setup:
+        clean_args = sys.argv.copy()
+        if "--help" in clean_args:
+            clean_args.remove("--help")
+
+        args, other = self._parser.parse_known_args(clean_args)
+        if args.setup:
             self._is_setup_process = True
         self.setup()
-        return self._cmd_args
+        return args
 
     def _add_prj_build_venv_path_to_sys_path(self):
         """function for adding the side packages installed under the venv to the current python accessible path.
@@ -291,9 +281,13 @@ class Project:
         venv_site_packages = os.path.abspath(output.decode("utf-8").strip())
         site.addsitedir(venv_site_packages)
 
-        current_pythonpath = os.environ.get('PYTHONPATH', '')
-        new_pythonpath = f"{venv_site_packages}:{current_pythonpath}" if current_pythonpath else venv_site_packages
-        os.environ['PYTHONPATH'] = new_pythonpath
+        current_pythonpath = os.environ.get("PYTHONPATH", "")
+        new_pythonpath = (
+            f"{venv_site_packages}:{current_pythonpath}"
+            if current_pythonpath
+            else venv_site_packages
+        )
+        os.environ["PYTHONPATH"] = new_pythonpath
 
         venv_bin_path = os.path.join(self._build_venv_abs_path, "bin")
 
@@ -304,24 +298,46 @@ class Project:
         else:
             raise RuntimeError("Your platform is not suported")
 
-        current_pyth = os.environ.get('PATH', '')
-        new_path = f"{venv_bin_path}{os.pathsep}{current_pyth}" if current_pyth else venv_bin_path
-        os.environ['PATH'] = new_path
+        current_pyth = os.environ.get("PATH", "")
+        new_path = (
+            f"{venv_bin_path}{os.pathsep}{current_pyth}"
+            if current_pyth
+            else venv_bin_path
+        )
+        os.environ["PATH"] = new_path
 
     def make_project_cli_available(self):
         """function used in a with block to make the current class instance availalbe to the cli. (python script.py -arg -arg)
         this allows usage from cli and access to all functions in this class"""
-       
 
+        self._parser.add_argument(
+            "--setVars",
+            dest="extra_var_dict",
+            action=Cmd_StoreDictKeyPair,
+            help=f"allows you to set PRJ varaibles from the CLI, current vars: {self._project_internal_varialbes}, set varialbes via --setVars '<JsonData>'",
+        )
 
-        
+        stage_exex_grps = self._parser.add_mutually_exclusive_group()
+        stage_exex_grps.add_argument(
+            "--execSingleStage",
+            help=f"Executs a single Stage. Stages: {[name.StageName for name in self._project_stage_list]}",
+            type=str,
+        )
+        stage_exex_grps.add_argument(
+            "--execAllStages", help="Executes all stages in the oder", type=str
+        )
+        stage_exex_grps.add_argument(
+            "--runStageGRP",
+            help=f"allows you to run a Stage GRP. Availalbe GRP's: {[grp for grp in self._project_stage_groups_list]}",
+            type=str,
+        )
 
+        self._cmd_args = self._parser.parse_args()
 
-        
         if self._cmd_args.extra_var_dict:
             self._project_internal_varialbes.update(self._cmd_args.extra_var_dict)
             self.log("Add Vars from CMD", self._cmd_args.extra_var_dict)
-        
+
         if stage_name := self._cmd_args.execSingleStage:
             self.execSingleStage(stage_name)
             return
@@ -434,6 +450,7 @@ class Project:
         print("Output file path: ", filePos)
         print()
 
+        os.makedirs(self._build_artefacts_out_path, exist_ok=True)
         with open(filePos, "w") as file:
             output = Stage.exec_stage(self)
             file.write(output)
@@ -512,7 +529,6 @@ class Project:
 
         return activate_cmd
 
-
     def _install_pip_packages_in_venv(self, venv_path: str, pip_package_list: list):
         """helper function that will activate the venv, upgrade pip and install
         the package list. this will be executed in a subprocess
@@ -531,9 +547,13 @@ class Project:
             if pip_install_command:
                 command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"'
         else:
-            command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"]
+            command = [
+                f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"
+            ]
             if pip_install_command:
-                command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"]
+                command = [
+                    f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"
+                ]
 
         process = subprocess.Popen(
             command,
@@ -544,8 +564,6 @@ class Project:
         if return_code:
             raise subprocess.CalledProcessError(return_code, command)
         print("installed all packages")
-
-
 
     def add_pip_package(self, packageName: str) -> None:
         """appends a package name to _project_requested_pip_packes list so that _install_pip_packages_in_venv can consume them
