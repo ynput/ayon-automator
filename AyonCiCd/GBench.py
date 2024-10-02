@@ -1,9 +1,14 @@
 import os
 from . import cmd
+from typing import Optional
 
 
 def run_google_benchmark(
-    GBenchPath: str, OutFilePath: str, time_unit: str = "ms", *args
+    GBenchPath: str,
+    OutFilePath: str,
+    time_unit: Optional[str] = "ms",
+    env: Optional[os._Environ] = None,
+    *args,
 ):
     """function for running google benchmark (this function will not register errors as benchmarks should not be used for testing)
 
@@ -14,9 +19,12 @@ def run_google_benchmark(
         *args: extra arguments to be passed to google bench
     """
     args = list(args)
+
     if not time_unit in ["ns", "us", "ms", "s"]:
-        args.append(time_unit)
         time_unit = "ms"
+
+    if not env:
+        env = os.environ.copy()
 
     GBnechPath = os.path.abspath(GBenchPath)
     OutFilePath = os.path.abspath(OutFilePath)
@@ -27,4 +35,4 @@ def run_google_benchmark(
         f"--benchmark_out={OutFilePath}",
     ]
     command = [GBnechPath] + OutCommand + args
-    cmd.run(command)
+    cmd.run(command, env=env)
