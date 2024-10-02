@@ -626,32 +626,24 @@ class Stage:
         Args:
             artefactPath ():
         """
+        abs_atefact_path = os.path.abspath(artefact_root)
 
-        if not os.path.exists(artefact_dest):
-            os.makedirs(artefact_dest)
+        if not os.path.exists(abs_atefact_path):
+            print("No artefact to copy")
+            return
 
-        artefactDestinationPath = os.path.join(
+        name_spaced_artefact_path = os.path.join(
             artefact_dest, os.path.basename(artefact_root)
         )
 
-        if os.path.isfile(artefact_root):
-            try:
-                os.makedirs(os.path.dirname(artefactDestinationPath), exist_ok=True)
-                shutil.copy(
-                    os.path.abspath(artefact_root),
-                    os.path.abspath(artefactDestinationPath),
-                )
-            except shutil.Error:
-                print("No artefacts to Copy")
+        if os.path.exists(name_spaced_artefact_path):
+            shutil.rmtree(name_spaced_artefact_path)
+        os.makedirs(artefact_dest, exist_ok=True)
 
+        if os.path.isfile(artefact_root):
+            shutil.copyfile(abs_atefact_path, name_spaced_artefact_path)
         else:
-            try:
-                if os.path.exists(artefactDestinationPath):
-                    print("dir")
-                    shutil.rmtree(artefactDestinationPath)
-                shutil.copytree(os.path.abspath(artefact_dest), artefactDestinationPath)
-            except shutil.Error:
-                print("No artefacts to Copy")
+            shutil.copytree(abs_atefact_path, name_spaced_artefact_path)
 
     def exec_stage(self, parent_prj: Project):
         """this function will be called by every system that intends executing the stage
@@ -663,30 +655,29 @@ class Stage:
         std_out_capture = io.StringIO()
         std_err_capture = io.StringIO()
 
-        with redirect_stderr(std_err_capture):
-            with redirect_stdout(std_out_capture):
-                for func in self.stage_function_list:
-                    print("#" * shutil.get_terminal_size().columns)
-                    print(f"FuncName: {func.func_name}")
-                    print("*" * shutil.get_terminal_size().columns)
-                    try:
-                        func.run()
-                    except helpers.FaileException as e:
-                        print(f"Test FAILED msg({str(e)})")
-                        parent_prj._project_runtime_errors[func.func.__name__] = str(e)
-                        parent_prj._project_execuition_error_int = 1
-                    print("*" * shutil.get_terminal_size().columns)
-                    print()
+        with redirect_stderr(std_err_capture), redirect_stdout(std_out_capture):
+            for func in self.stage_function_list:
+                print("#" * shutil.get_terminal_size().columns)
+                print(f"FuncName: {func.func_name}")
+                print("*" * shutil.get_terminal_size().columns)
+                try:
+                    func.run()
+                except helpers.FaileException as e:
+                    print(f"Test FAILED msg({str(e)})")
+                    parent_prj._project_runtime_errors[func.func.__name__] = str(e)
+                    parent_prj._project_execuition_error_int = 1
+                print("*" * shutil.get_terminal_size().columns)
+                print()
 
-                for artefactPath in self.stage_artefact_list:
+            for artefactPath in self.stage_artefact_list:
 
-                    self.copy_artefact(
-                        artefactPath,
-                        os.path.join(
-                            parent_prj._build_artefacts_out_path,
-                            f"{self.StageName}_Artefacts",
-                        ),
-                    )
+                self.copy_artefact(
+                    artefactPath,
+                    os.path.join(
+                        parent_prj._build_artefacts_out_path,
+                        f"{self.StageName}_Artefacts",
+                    ),
+                )
 
         sys.stdout.write(std_out_capture.getvalue())
         sys.stderr.write(std_err_capture.getvalue())
