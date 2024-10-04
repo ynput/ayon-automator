@@ -642,7 +642,10 @@ class Stage:
         )
 
         if os.path.exists(name_spaced_artefact_path):
-            shutil.rmtree(name_spaced_artefact_path)
+            if os.path.isfile(name_spaced_artefact_path):
+                os.remove(name_spaced_artefact_path)
+            if os.path.isdir(name_spaced_artefact_path):
+                shutil.rmtree(name_spaced_artefact_path)
         os.makedirs(artefact_dest, exist_ok=True)
 
         if os.path.isfile(artefact_root):
