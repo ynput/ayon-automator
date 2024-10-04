@@ -20,10 +20,14 @@ from . import helpers
 class Cmd_StoreDictKeyPair(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         try:
-            extra_env_var_dict = json.loads(values)
-
+            # Preprocess: Add quotes around the keys and values
+            processed_values = re.sub(r"(\w+):([^,}]+)", r'"\1":"\2"', values)
+            # Attempt to parse the preprocessed input string as a JSON object (dictionary)
+            extra_env_var_dict = json.loads(processed_values)
         except json.JSONDecodeError:
+            # Raise an error if the input is not valid JSON
             raise argparse.ArgumentTypeError(f"Invalid dictionary string: {values}")
+        # Store the parsed dictionary in the specified namespace
         setattr(namespace, self.dest, extra_env_var_dict)
 
 
