@@ -613,7 +613,7 @@ class Stage:
         for func in args:
             self.stage_function_list.append(func)
 
-    def addArtefactFoulder(self, fouderPath) -> None:
+    def addArtefactFolder(self, fouderPath) -> None:
         """adds an artifact to the stages stage_artefact_list list. this function also allows adding files as artifact's and is not yet renamed
         Args:
             fouderPath ():
