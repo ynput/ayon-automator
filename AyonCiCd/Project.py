@@ -418,7 +418,7 @@ class Project:
             activate_cmd = f"{activate_script}"
         else:
             activate_script = os.path.join(venv_path, "bin", "activate")
-            activate_cmd = f"source {activate_script}"
+            activate_cmd = f". {activate_script}"
 
         return activate_cmd
 
@@ -435,24 +435,23 @@ class Project:
             pip_install_list = " ".join(pip_package_list)
             pip_install_command = f"pip install {pip_install_list}"
 
-        command = []
+        command = f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"
+        if pip_install_command:
+            command += f" && {pip_install_command}"
+
         if sys.platform.lower() == "win32":
-            command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"'
-            if pip_install_command:
-                command = f'cmd /c "{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"'
-        else:
-            command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip"]
-            if pip_install_command:
-                command = [f"{self.__get_venv_activate_cmd(venv_path)} && pip install --upgrade pip && {pip_install_command}"]
+            command = f'cmd /c "{command}"'
 
-        process = subprocess.Popen(
-            command,
-            shell=True,
-        )
+        try:
+            process = subprocess.check_call(
+                command,
+                shell=True,
+            )
 
-        return_code = process.wait()
-        if return_code:
-            raise subprocess.CalledProcessError(return_code, command)
+        except subprocess.CalledProcessError as error:
+            # TODO log failed command and log warning
+            raise
+
         print("installed all packages")
 
 
